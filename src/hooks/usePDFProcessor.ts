@@ -1,11 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
-// import * as FileSystem from 'expo-file-system';
 import { useBookStore } from '../stores/bookStore';
 import { type Book, type Chapter } from '../types';
 import { File } from 'expo-file-system/next';
 import Constants from 'expo-constants';
 
-const API_KEY = Constants.expoConfig?.extra?.anthropicApiKey ?? '';
+const PROXY_URL = Constants.expoConfig?.extra?.supabaseUrl 
+  ? `${Constants.expoConfig.extra.supabaseUrl}/functions/v1/claude-proxy`
+  : '';
 
 const SYSTEM_PROMPT = `You are an expert educator extracting knowledge from a textbook.
 Your job is to create a structured, detailed study guide.
@@ -34,13 +35,10 @@ const chunkText = (text: string, chunkSize: number = 12000): string[] => {
 };
 
 const callClaude = async (prompt: string): Promise<string> => {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(PROXY_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
@@ -162,13 +160,10 @@ Return a JSON array of chapters, each with this exact structure:
       setProcessingProgress(25);
       setProcessingStatus('Analysing content with AI...');
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
