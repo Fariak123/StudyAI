@@ -1,30 +1,71 @@
 import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HomeScreen } from './src/screens/HomeScreen';
-import { type Book } from './src/types';
 import { BookScreen } from './src/screens/BookScreen';
+import { ChapterScreen } from './src/screens/ChapterScreen';
+import { ExerciseScreen } from './src/screens/ExerciseScreen';
+import { ResultScreen } from './src/screens/ResultScreen';
+import { type Book, type Chapter } from './src/types';
+
+type Screen = 'home' | 'book' | 'chapter' | 'exercise' | 'result';
 
 export default function App() {
+  const [screen, setScreen] = useState<Screen>('home');
   const [currentBook, setCurrentBook] = useState<Book | null>(null);
+  const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
+  const [lastScore, setLastScore] = useState(0);
 
   return (
     <SafeAreaProvider>
-      {currentBook ? (
+      {screen === 'home' && (
+        <HomeScreen
+          onSelectBook={(book) => {
+            setCurrentBook(book);
+            setScreen('book');
+          }}
+        />
+      )}
+
+      {screen === 'book' && currentBook && (
         <BookScreen
           book={currentBook}
-          onBack={() => setCurrentBook(null)}
+          onBack={() => setScreen('home')}
+          onSelectChapter={(chapter) => {
+            setCurrentChapter(chapter);
+            setScreen('chapter');
+          }}
         />
-      ) : (
-        <HomeScreen onSelectBook={setCurrentBook} />
+      )}
+
+      {screen === 'chapter' && currentChapter && (
+        <ChapterScreen
+          chapter={currentChapter}
+          onBack={() => setScreen('book')}
+          onStartExercises={() => setScreen('exercise')}
+        />
+      )}
+
+      {screen === 'exercise' && currentChapter && currentBook && (
+        <ExerciseScreen
+          chapter={currentChapter}
+          bookId={currentBook.id}
+          onBack={() => setScreen('chapter')}
+          onFinish={(score) => {
+            setLastScore(score);
+            setScreen('result');
+          }}
+        />
+      )}
+
+      {screen === 'result' && currentChapter && (
+        <ResultScreen
+          score={lastScore}
+          totalQuestions={currentChapter.exercises.length}
+          chapterTitle={currentChapter.title}
+          onRetry={() => setScreen('exercise')}
+          onBack={() => setScreen('chapter')}
+        />
       )}
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f0f1a',
-  },
-});
